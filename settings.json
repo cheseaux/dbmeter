@@ -1,0 +1,12 @@
+{
+  "dB.min": 20,
+  "dB.max": 80,
+  "warn": {
+    "enabled": true,
+    "duration": 15
+  },
+  "alarm": {
+    "enabled": true,
+    "duration": 5
+  }
+}
