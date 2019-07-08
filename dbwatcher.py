@@ -1,6 +1,8 @@
 #!/usr/bin/python
 from imgs import *
 from settings import *
+from alarm import *
+from multiprocessing import Process
 
 import time
 import math
@@ -11,7 +13,8 @@ from luma.core.interface.serial import spi, noop
 from luma.core.render import canvas
 from luma.led_matrix.device import max7219
 
-N=8 # 8x8 matrix
+N=8 # 8x8 led matrix
+maxConsecutiveWarnings=2
 serial = spi(port=0, device=0, gpio=noop())
 device = max7219(serial)
 
@@ -29,7 +32,7 @@ def print_stacks(cnt):
     intensity=map_range((0,N-1),(0,255), cnt)
     device.contrast(intensity)
 
-def print_matrix(img):
+def print_img(img):
   mat=zip(*img) #Rotate 90 degrees
   with canvas(device) as draw:
     for i in range(len(mat)):
@@ -44,8 +47,13 @@ def blink(fun, arg, times=1, delay=2.0):
     device.clear()
     time.sleep(delay)
 
-def ring_alarm():
-  print "ALARM ! ALARM ! ALARM !" 
+def alarm():
+  p_ring = Process(target=ring_alarm)
+  p_blink = Process(target=blink, args=(print_img, cross_8x8, 15, 0.1))
+  p_blink.start()
+  p_ring.start()
+  p_ring.join()
+  p_blink.join()
 
 def main():
   historyLength = 5 
@@ -65,15 +73,16 @@ def main():
     if not warning: 
       print_stacks(level)
 
-    #Warning
     print "Average DB : %f, maxDB : %f" % (averageDB, max_db())
     if len(history) == historyLength and averageDB > max_db():
       warning = True
-      if warn_is_enabled():
-        blink(print_matrix, warn_8x8, 10, 0.1)
+      blink(print_img, warn_8x8, 10, 0.1)
       consecutiveWarnings += 1
-      if consecutiveWarnings > 5 and alarm_is_enabled:
-        ring_alarm()
+      print "consecutive warnings %d" % consecutiveWarnings 
+      if consecutiveWarnings >= maxConsecutiveWarnings: 
+        alarm()
+        consecutiveWarnings=0
+        warning = False
     else:
       warning = False
       consecutiveWarnings = 0

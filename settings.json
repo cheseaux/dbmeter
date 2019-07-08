@@ -1,1 +1,1 @@
-{"warnDuration": 15, "warnEnabled": true, "maxDb": "80", "alarmDuration": 5, "alarmEnabled": true, "minDb": "0"}
+{"maxDb": "50", "minDb": "0"}

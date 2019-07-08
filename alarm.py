@@ -7,12 +7,10 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(27, GPIO.OUT)
 p = GPIO.PWM(27, 100)
 
-speed = 0.001
-
-GPIO.output(27, True) 
-p.start(10) # 10% duty cycle sounds 'ok'
-
 def whooze():
+  GPIO.output(27, True) 
+  p.start(10) 
+  speed = 0.001
   for hz in range(440, 1000):
     p.ChangeFrequency(hz)
     time.sleep(speed)
@@ -21,8 +19,8 @@ def whooze():
     p.ChangeFrequency(hz)
     time.sleep(speed)
 
-for i in range(0, 3):
-  whooze()
+  p.stop()
 
-p.stop()
-GPIO.cleanup()
+def ring_alarm(numtimes=3):
+  for i in range(0, numtimes):
+    whooze()
