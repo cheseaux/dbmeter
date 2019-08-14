@@ -15,13 +15,13 @@ from luma.core.render import canvas
 from luma.led_matrix.device import max7219
 
 N=8 # 8x8 led matrix
-maxConsecutiveWarnings=3
+maxConsecutiveWarnings=2
 serial = spi(port=0, device=0, gpio=noop())
 device = max7219(serial)
 
-minDB=40
-maxDB=50
-historyFilePath = "sound-level.csv"
+dbThreshold=47
+historyFilePath = "/home/pi/sound-meter-project/sound-level.csv"
+
 
 def map_range( a, b, s):
   (a1, a2), (b1, b2) = a, b
@@ -79,29 +79,41 @@ def save_to_csv(level):
   with open(historyFilePath, "a") as f:
     f.write(str(int(time.time())) + "," + str(level) + "\n")
 
-def main():
-  blink(print_img, boot_8x8, 3, 0.5, 255)
-  delete_history_file()
-  historyLength = 3
-  history = collections.deque(maxlen=historyLength)
-  warning = False
-  consecutiveWarnings = 0
-  while True:
-    #Probe room sound level
+
+def is_currently_loud():
     print "Probing..."
     cmd = "arecord -q -d 1 -D hw:1,0 -r 44100 -f S16_LE | sox -t .wav - -n stats 2>&1 | awk '/RMS lev dB/{print 100 + $4}'"
     measuredDB = float(subprocess.check_output(cmd, shell=True))
     save_to_csv(measuredDB)
-    history.append(measuredDB)
-    averageDB = mean(history)
-    level = int(map_range_db((minDB,maxDB),(0,N), averageDB))
+    print "Room current dB : %f" % measuredDB
+    return measuredDB > dbThreshold
 
-    print "Room current dB : %f, avg since %d samples : %f, level : %d" % (measuredDB, historyLength, averageDB, level)
+def main():
+  loudnessCountThreshold=30
+  loudnessCount=0
+  silenceCount=0
+
+  blink(print_img, boot_8x8, 3, 0.5, 255)
+  delete_history_file()
+  warning = False
+  consecutiveWarnings = 0
+  while True:
+    if is_currently_loud():
+      loudnessCount += 1 
+    else:
+      silenceCount += 1
+      if silenceCount > 5:
+        loudnessCount = max(loudnessCount-1, 0)
+        silenceCount = 0
+
+    level = map_range((0, N-1), (0, loudnessCountThreshold), loudnessCount)
+
+    print "Loudness : %f, Silence : %f, level : %f" % (loudnessCount, silenceCount, level)
+
     if not warning: 
       print_stacks(level)
 
-    print "Average DB : %f, maxDB : %f" % (averageDB, maxDB)
-    if len(history) == historyLength and averageDB > maxDB:
+    if loudnessCount >= loudnessCountThreshold:
       warning = True
       blink(print_img, warn_8x8, 10, 0.1, 255)
       consecutiveWarnings += 1
@@ -113,7 +125,6 @@ def main():
     else:
       warning = False
       consecutiveWarnings = 0
-      #time.sleep(1)
 
 if __name__ == "__main__":
     main()
