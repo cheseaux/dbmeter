@@ -1,26 +1,27 @@
 #!/usr/bin/python
 
-import RPi.GPIO as GPIO 
-import time 
+import time
+
+import RPi.GPIO as GPIO
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(27, GPIO.OUT)
 p = GPIO.PWM(27, 100)
 
-def whooze():
-  GPIO.output(27, True) 
-  p.start(10) 
-  speed = 0.001
-  for hz in range(440, 1000):
-    p.ChangeFrequency(hz)
-    time.sleep(speed)
 
-  for hz in range(1000, 440, -1):
-    p.ChangeFrequency(hz)
-    time.sleep(speed)
+def alarm():
+    for x in range(0, 3):
+        GPIO.output(27, True)
+        time.sleep(0.1)
+        GPIO.output(27, False)
+        time.sleep(0.1)
+    for x in range(0, 3):
+        GPIO.output(27, True)
+        time.sleep(0.05)
+        GPIO.output(27, False)
+        time.sleep(0.05)
+    GPIO.output(27, False)
 
-  p.stop()
 
-def ring_alarm(numtimes=3):
-  for i in range(0, numtimes):
-    whooze()
+def ring_alarm():
+    alarm()
