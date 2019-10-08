@@ -1,0 +1,8 @@
+[Unit]
+Description=DB watcher
+
+[Service]
+ExecStart=python /home/pi/dbmeter/dbwatcher.py
+
+[Install]
+WantedBy=multi-user.target
