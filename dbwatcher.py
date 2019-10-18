@@ -29,7 +29,6 @@ silence_decrement = 1
 
 overall_max_noise_level = 24  # = 8 seconds super noisy or 24 seconds noisy
 
-
 def create_log_file():
     if not os.path.exists(os.path.dirname(log_file_name)):
         try:
@@ -118,7 +117,7 @@ def main():
         print "Current noise level : %d/%d" % (noise_level, overall_max_noise_level)
 
         if not is_warning:
-            stack_count = noise_level / noisy_increment
+            stack_count = noise_level * N / overall_max_noise_level
             print "Stack to display : %d" % stack_count
             print_stacks(stack_count)
 
