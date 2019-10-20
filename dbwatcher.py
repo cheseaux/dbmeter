@@ -12,6 +12,11 @@ from luma.led_matrix.device import max7219
 from alarm import *
 from imgs import *
 
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
 N = 8  # 8x8 led matrix
 serial = spi(port=0, device=0, gpio=noop())
 device = max7219(serial)
@@ -28,6 +33,7 @@ super_noisy_increment = 3
 silence_decrement = 1
 
 overall_max_noise_level = 24  # = 8 seconds super noisy or 24 seconds noisy
+
 
 def create_log_file():
     if not os.path.exists(os.path.dirname(log_file_name)):
@@ -97,6 +103,13 @@ def is_noisy(threshold=noisy_threshold):
     save_to_csv(measured_db)
     return measured_db > threshold
 
+def check_shutdown():
+  switch_off = GPIO.input(21)
+  print "Switch : %s" % switch_off
+  if switch_off:
+    boot_animation()
+    print "shutting down..."
+    os.system("sudo shutdown -h now")
 
 def main():
     boot_animation()
@@ -105,6 +118,7 @@ def main():
     is_warning = False
     consecutive_warnings = 0
     while True:
+        check_shutdown()
         if is_super_noisy():
             print "Super noisy, increment %d" % super_noisy_increment
             noise_level = min(overall_max_noise_level, noise_level + super_noisy_increment)
